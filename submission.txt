@@ -1,0 +1,10 @@
+Scraped Website: https://www.trendmicro.com/vinfo/us/threat-encyclopedia/malware
+
+Github Repo: https://github.com/Pine9/ThreatEncyclopedia
+
+I scraped information about each malware entry that is available online in Trend Micro's Threat Encyclopedia (I could find about 500 entries as of 4/18/2021). 
+It includes basic information that researchers have found for various malware samples.
+
+The fields I collected describe the name of the malware, the platform/OS it runs on,  the infection channel, the payload, 
+whether the malware is resident in memory, the file type/extension, the file size (in bytes), the date the malware sample was first received, and 
+the date of pattern release (when the signature was first included in the scan engine as an update/new release).
