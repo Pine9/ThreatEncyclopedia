@@ -18,54 +18,56 @@ class ThreatSpider(scrapy.Spider):
             yield scrapy.Request(url=url, callback=self.parse_entry)
         # The html for navigating through the pages is a bit of a mess.
         # However, I know that there are 50 pages
-        if self.pagenum <= self.pages:
+        if self.pagenum < self.pages:
             self.pagenum += 1
             next_page = response.urljoin(f"/vinfo/us/threat-encyclopedia/malware/page/{self.pagenum}")
             yield scrapy.Request(next_page, callback=self.parse)
 
     def parse_entry(self, response):
-        # fields: name, type, prefix, platform, suffix/variant, payload, infection channel, memory resident, file type, file size
+        # fields: name, platform, infection channel, payload, memory resident, file type, file size, date of sample, date of pattern release
+        # official pattern release refers to when the signature was included in the scan engine as an update/new release
         # malware naming conventions: https://docs.trendmicro.com/all/ent/tms/v2.5/en-us/tda_2.5_olh/malware_naming.htm
         title = response.css("h1.lessen_h1::text").get()
         platform = response.css("div.entityHeader p::text").getall()
-        payload = response.css("div.labelHeader::text").getall()
-        resident = response.css("div.labelHeader::text").getall()
-        fileinfo = response.css("div.labelHeader::text").getall()[2]
-
-        if (len(platform)) > 1:
+        if len(platform) > 1:
             platform = platform[1]
         else:
-            platform = "Unknown"
+            platform = platform[0]
+        infolabels = response.css("div.labelHeader span::text").getall()
+        inforesults = response.css("div.labelHeader::text").getall()
 
-        if len(payload) > 4:
-            payload = payload[4]
-        else:
-            payload = "Unknown"
+        payload = "Unknown"
+        channel = "Unknown"
+        resident = "Unknown"
+        filetype = "Unknown"
+        filesize = "Unknown"
+        date = "Unknown"
+        patterndate = "Unknown"
 
-        if len(resident) > 3:
-            resident = resident[3]
-        else:
-            resident = None
+        for j in range(len(infolabels)):
+            if infolabels[j] == 'Infection Channel: ':
+                channel = inforesults[j]
+            elif infolabels[j] == 'File Size: ':
+                filesize = inforesults[j]
+            elif infolabels[j] == 'File Type: ':
+                filetype = inforesults[j]
+            elif infolabels[j] == 'Memory Resident: ':
+                resident = inforesults[j]
+            elif infolabels[j] == 'Initial Samples Received Date: ':
+                date = inforesults[j]
+            elif infolabels[j] == 'Payload: ':
+                payload = inforesults[j]
+            elif infolabels[j] == 'VSAPI OPR PATTERN Date: ':
+                patterndate = inforesults[j]
 
-        if len(fileinfo) > 2:
-            filetype = fileinfo[2]
-        else:
-            filetype = "Unknown"
-
-        if len(fileinfo) > 1:
-            filesize = fileinfo[1]
-        else:
-            filesize = 0
-
-        """
-            'file type' : filetype,
-            'file size' : filesize
-        """
-        # look into prefix and suffix, which unfortunately is not consistent between samples
         yield {
-            'full name' : title,
+            'name' : title,
             'platform': platform,
+            'infection channel': channel,
             'payload' : payload,
-            'infection channel' : response.css("div.labelHeader::text").get(),
-            'memory resident?' : resident
+            'memory resident?' : resident,
+            'file type' : filetype,
+            'file size' : filesize,
+            'date of sample' : date,
+            'date of pattern' : patterndate
         }
